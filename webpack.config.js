@@ -4,8 +4,20 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const path = require('path');
 
 module.exports = {
-  entry: './src/scripts/app.ts',
+  entry: './src/scripts/main.ts',
   mode: 'production',
+  devServer: {
+    compress: true,
+    port: 8080,
+    client: {
+      progress: true,
+    },
+  },
+  performance: {
+    hints: false,
+    maxEntrypointSize: 512000,
+    maxAssetSize: 512000
+  },
   module: {
     rules: [
       {
