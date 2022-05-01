@@ -3,9 +3,11 @@ const CopyPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const path = require('path');
 
+const isProd = process.env.NODE_ENV === 'production';
+
 module.exports = {
   entry: './src/scripts/main.ts',
-  mode: 'production',
+  devtool: isProd ? false : 'eval-source-map',
   devServer: {
     compress: true,
     port: 8080,

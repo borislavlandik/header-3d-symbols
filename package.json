@@ -2,8 +2,8 @@
   "name": "header-3d-symbols",
   "version": "0.0.0",
   "scripts": {
-    "start": "webpack serve",
-    "build": "webpack --config webpack.config.js"
+    "start": "webpack serve --mode=development",
+    "build": "webpack --mode=production"
   },
   "repository": {
     "type": "git",
