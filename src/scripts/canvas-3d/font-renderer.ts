@@ -1,36 +1,22 @@
-import { Color, DirectionalLight, DoubleSide, Euler, GridHelper, Mesh, MeshBasicMaterial, MeshPhongMaterial, OrthographicCamera, PerspectiveCamera, PlaneGeometry, ShaderLib, ShaderMaterial } from 'three';
+import { Color, DirectionalLight, DoubleSide, Euler, GridHelper, Mesh, MeshBasicMaterial, MeshPhongMaterial, OrthographicCamera, PerspectiveCamera, PlaneGeometry, Raycaster, ShaderLib, ShaderMaterial, Vector2, Vector3 } from 'three';
 import { Font, FontLoader } from 'three/examples/jsm/loaders/FontLoader';
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry';
 import { BaseRenderer } from './base-renderer';
 
 export class FontRenderer extends BaseRenderer {
     private mainColor = 0x000000;
-
+    private fontHeight = 4;
+    private fontSize = 5;
+    private plane: Mesh = {} as Mesh;
     private meshes: Mesh[] = [];
+    private pointer = new Vector3(0, 0, 0);
+    private raycaster = new Raycaster();
     
     constructor(canvasId: string) {
         super(canvasId);
         this.configureCamera();
-
-        // const gridHelper = new GridHelper(1000, 10000);
-        // this.scene.add(gridHelper);
-
-        const planeGeomerty = new PlaneGeometry(150, 150);
-        const doublesideMaterial = new MeshBasicMaterial( { color: this.mainColor, side: DoubleSide } );
-        const plane = new Mesh(planeGeomerty, doublesideMaterial);
-
-        this.scene.add(plane);
-
-        const firstLight = new DirectionalLight(0xffffff, 1);
-        firstLight.position.set(-1, 2, 4);
-        firstLight.castShadow = true;
-
-        const secondLight = new DirectionalLight(0xffffff, 1);
-        secondLight.position.set(1, 2, 4);
-        secondLight.castShadow = true;
-
-        this.scene.add(firstLight);
-        this.scene.add(secondLight);
+        this.listenMousePosition();
+        this.createBasePlane();
 
         const fontLoader = new FontLoader();
         fontLoader.load('./assets/fonts/Share Tech Mono_Regular.json', (font) => this.generateText(font));
@@ -42,22 +28,39 @@ export class FontRenderer extends BaseRenderer {
         this.camera = new OrthographicCamera(-30, 30, 30, -30, 0.1, 100 );
     }
     
-    protected render(time: number): void {
-        const secondsTime = time / 1000;
+    protected render(_time: number): void {
+        this.raycaster.setFromCamera(this.pointer, this.camera);
+        const intersects = this.raycaster.intersectObjects([ this.plane ]);
 
-        // this.meshes.forEach((mesh, index) => {
-        //     const speed = 1 + index * .2;
-        //     const position = - secondsTime * speed;
+        if (intersects.length == 0) {
+            return;
+        }
+
+        const intersectionPoint = intersects[0].point;
+        intersectionPoint.z = 0;
+
+        for(const mesh of this.meshes) {
+            const position = mesh.position.clone();
+
+            position.z = 0;
+            position.x += this.fontSize / 2 - this.fontSize / 5;
+            position.y += this.fontSize / 2;
+
+            const distance = position.distanceTo(intersectionPoint);
     
-        //     mesh.position.z = position;
-        // });
+            mesh.position.setZ(this.mapToDistanceToZ(distance));
+        }
     }
 
-    private getTextMesh(font: Font, fontSize: number, fontHeight: number, text: string): Mesh {
+    private mapToDistanceToZ(distance: number): number {
+        return Math.min((distance - 20) / (45 - 20) * (-this.fontHeight) - this.fontHeight, this.fontHeight);
+    } 
+
+    private getTextMesh(font: Font, fontSize: number, text: string): Mesh {
         const geometry = new TextGeometry(text, {
             font: font,
             size: fontSize,
-            height: fontHeight,
+            height: this.fontHeight,
         });
 
         geometry.computeBoundingBox();
@@ -107,19 +110,20 @@ export class FontRenderer extends BaseRenderer {
     }
 
     private generateText(font: Font): void {
-        const fontSize = 15;
-        const fontHeight = 7;
-        const xStart = -fontSize * 5, xEnd = fontSize * 4, yStart = -fontSize, yEnd = fontSize * 4;
+        const xStart = -this.fontSize * 10, 
+            xEnd = this.fontSize * 10, 
+            yStart = -this.fontSize * 10, 
+            yEnd = this.fontSize * 10;
 
         const textSymbols: Mesh[] = [
-            this.getTextMesh(font, fontSize, fontHeight, '0'),
-            this.getTextMesh(font, fontSize, fontHeight, '1'),
+            this.getTextMesh(font, this.fontSize, '0'),
+            this.getTextMesh(font, this.fontSize, '1'),
         ];
 
-        for (let y = yStart; y <= yEnd; y += fontSize + 2) {
-            for (let x = xStart; x <= xEnd; x += fontSize + 1) {
+        for (let y = yStart; y <= yEnd; y += this.fontSize + 1) {
+            for (let x = xStart; x <= xEnd; x += this.fontSize - 1) {
                 const randomMesh = this.getRandomElement(textSymbols).clone();
-                randomMesh.position.set(x, y, fontHeight);
+                randomMesh.position.set(x, y, -this.fontHeight);
                 this.scene.add(randomMesh);
                 this.meshes.push(randomMesh);       
             }
@@ -127,8 +131,22 @@ export class FontRenderer extends BaseRenderer {
     }
 
     private configureCamera(): void {
-        this.camera.position.set(20, 0, 40);
+        this.camera.position.set(30, 0, 35);
         this.camera.rotateX(0.5);
         this.camera.rotateY(0.7);
+    }
+
+    private listenMousePosition(): void {
+        window.addEventListener('pointermove', (event) => {
+            this.pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+            this.pointer.y = - (event.clientY / window.innerHeight) * 2 + 1;
+        });
+    }
+
+    private createBasePlane(): void {
+        const planeGeomerty = new PlaneGeometry(300, 300);
+        const doublesideMaterial = new MeshBasicMaterial({ color: this.mainColor, side: DoubleSide });
+        this.plane = new Mesh(planeGeomerty, doublesideMaterial);
+        this.scene.add(this.plane);
     }
 }
