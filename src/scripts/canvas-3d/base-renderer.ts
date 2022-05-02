@@ -1,25 +1,23 @@
-import { PerspectiveCamera, Renderer, Scene, WebGLRenderer } from 'three';
-import { IPerspectiveCameraSettings } from './base-renderer.interface';
+import { Camera, OrthographicCamera, PerspectiveCamera, Renderer, Scene, WebGLRenderer } from 'three';
 
 export abstract class BaseRenderer {
     protected renderer: Renderer;
-    protected camera: PerspectiveCamera;
     protected scene: Scene;
+    protected camera: Camera = {} as Camera;
     
-    constructor (canvasId: string, cameraSettings: IPerspectiveCameraSettings) {
+    constructor (canvasId: string) {
         const canvas = document.getElementById(canvasId) as HTMLCanvasElement;
         
         this.renderer = new WebGLRenderer({ canvas });
-        this.camera = this.createCameraInstance(cameraSettings);
         this.scene = new Scene();
+
+        this.createCamera();
 
         this.renderer.render(this.scene, this.camera);
     }
 
-    private createCameraInstance(cameraSettings: IPerspectiveCameraSettings): PerspectiveCamera {
-        const { fov, aspect, near, far } = cameraSettings;
-        return new PerspectiveCamera(fov, aspect, near, far);
-    }
+    protected abstract render(time: number): void;
+    protected abstract createCamera(): void;
 
     private resizeRendererToDisplaySize(): boolean {
         const canvas = this.renderer.domElement;
@@ -39,8 +37,20 @@ export abstract class BaseRenderer {
     private renderAnimationFrame(time: number): void {
         if (this.resizeRendererToDisplaySize()) {
             const canvas = this.renderer.domElement;
-            this.camera.aspect = canvas.clientWidth / canvas.clientHeight;
-            this.camera.updateProjectionMatrix();
+
+            if (this.camera instanceof PerspectiveCamera) {
+                this.camera.aspect = canvas.clientWidth / canvas.clientHeight;
+                this.camera.updateProjectionMatrix();
+            }
+
+            if (this.camera instanceof OrthographicCamera) {
+                const camFactor = 50;
+                this.camera.left = -window.innerWidth / camFactor;
+                this.camera.right = window.innerWidth / camFactor;
+                this.camera.top = window.innerHeight / camFactor;
+                this.camera.bottom = -window.innerHeight / camFactor;
+                this.camera.updateProjectionMatrix();
+            }
         }
     
         this.render(time);
@@ -48,8 +58,6 @@ export abstract class BaseRenderer {
         this.renderer.render(this.scene, this.camera);
         requestAnimationFrame((time) => this.renderAnimationFrame(time));
     }
-
-    public abstract render(time: number): void;
 
     public startAnimation(): void {
         requestAnimationFrame((time) => this.renderAnimationFrame(time));

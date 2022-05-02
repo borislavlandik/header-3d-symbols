@@ -1,25 +1,20 @@
-import { Mesh, Object3D } from 'three';
+import { Mesh, Object3D, PerspectiveCamera } from 'three';
 import { BaseRenderer } from './base-renderer';
-import { IPerspectiveCameraSettings } from './base-renderer.interface';
 
 export class RotationRenderer extends BaseRenderer {
     private meshes: Mesh[] = [];
 
-    constructor(canvasId: string, cameraSettings: IPerspectiveCameraSettings) {
-        super(canvasId, cameraSettings);
+    constructor(canvasId: string) {
+        super(canvasId);
         this.camera.position.set(0, 1, 2);
         this.startAnimation();
     }
 
-    addObject(object: Object3D): void {
-        if (object instanceof Mesh) {
-            this.meshes.push(object);
-        }
-
-        this.scene.add(object);
+    protected createCamera(): void {
+        this.camera = new PerspectiveCamera(75, 2, 0.1, 5);
     }
 
-    render(time: number): void {
+    protected render(time: number): void {
         const secondsTime = time / 1000;
 
         this.meshes.forEach((mesh, index) => {
@@ -29,5 +24,13 @@ export class RotationRenderer extends BaseRenderer {
             mesh.rotation.x = rotation;
             mesh.rotation.y = rotation;
         });
+    }
+
+    addObject(object: Object3D): void {
+        if (object instanceof Mesh) {
+            this.meshes.push(object);
+        }
+
+        this.scene.add(object);
     }
 }
