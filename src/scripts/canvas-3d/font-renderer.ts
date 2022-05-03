@@ -136,10 +136,16 @@ export class FontRenderer extends BaseRenderer {
     }
 
     private generateText(font: Font): void {
-        const xStart = -this.fontSize * 10, 
-            xEnd = this.fontSize * 10, 
-            yStart = -this.fontSize * 10, 
-            yEnd = this.fontSize * 10;
+        const screenWidth = window.screen.width;
+        const screenHeight = window.screen.height;
+
+        const cameraMultiplier = 4;
+        const overflowAddition = this.fontSize * 3;
+
+        const xStart = - Math.floor(screenWidth / (this.fontSize * cameraMultiplier) / 2) - overflowAddition;
+        const xEnd = Math.floor(screenWidth / (this.fontSize * cameraMultiplier) / 2) + overflowAddition;
+        const yStart = - overflowAddition; 
+        const yEnd = Math.floor(screenHeight / (this.fontSize * cameraMultiplier)) + overflowAddition;
 
         const textSymbols: Mesh[] = [
             this.getTextMesh(font, '0'),
