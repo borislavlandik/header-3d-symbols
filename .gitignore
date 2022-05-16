@@ -1,3 +1,7 @@
 node_modules
 
+# build directory
 dist
+
+# webpack bundle analyzer data
+stats.json
